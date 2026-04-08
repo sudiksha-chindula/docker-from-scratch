@@ -8,6 +8,10 @@ void ds_rmi(char* []);
 
 int main(int argc, char* argv[])
 {
+    if (argc<2)
+    {
+        printf("No commands entered for docksmith.");
+    }
     if (strcmp(argv[1], "docksmith")==0)    //docksmith
     {       
         if (strcmp(argv[2], "build")==0)        //docksmith build
@@ -27,6 +31,10 @@ int main(int argc, char* argv[])
             ds_rmi(argv);
         }
     }
+    else
+    {
+        printf("Unknown/invalid command. Please recheck.\n");
+    }
     //for (int i=1; i<argc; i++)
     //{}
     return 0;
@@ -34,20 +42,20 @@ int main(int argc, char* argv[])
 
 void ds_build(char* argv[])
 {
-    printf("%s", "build: not implemented\n");
+    printf("build: not implemented\n");
 }
 
 void ds_images(char* argv[])
 {
-    printf("%s", "build: not implemented\n");
+    printf("build: not implemented\n");
 }
 
 void ds_rmi(char* argv[])
 {
-    printf("%s", "build: not implemented\n");
+    printf("build: not implemented\n");
 }
 
 void ds_run(char* argv[])
 {
-    printf("%s", "build: not implemented\n");
+    printf("build: not implemented\n");
 }
