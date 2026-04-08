@@ -8,7 +8,7 @@ void ds_rmi(char* []);
 
 int main(int argc, char* argv[])
 {
-    if (argc<2)
+    if (argc<2)     //edge case, no commands
     {
         printf("No commands entered for docksmith.");
     }
@@ -31,12 +31,10 @@ int main(int argc, char* argv[])
             ds_rmi(argv);
         }
     }
-    else
+    else    //edge case: invalid commands
     {
         printf("Unknown/invalid command. Please recheck.\n");
     }
-    //for (int i=1; i<argc; i++)
-    //{}
     return 0;
 }
 
