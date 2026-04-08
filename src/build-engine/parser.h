@@ -1,3 +1,6 @@
+#ifndef PARSER_H
+#define PARSER_H
+
 enum type
 {
     FROM,
@@ -15,3 +18,5 @@ struct parsed_instr
 };
 
 struct parsed_instr* parse_instr(char*, int*);
+
+#endif
