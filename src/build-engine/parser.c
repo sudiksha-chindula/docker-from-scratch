@@ -3,9 +3,12 @@
 #include <string.h>
 #include "parser.h"
 
-char keyword[256];
-char remline[256];
+char* keyword;
 char buffer[100];
+char* keyword;
+char* line;
+char* remline;
+struct parsed* all[50];
 
 int main()
 {
@@ -28,19 +31,58 @@ struct parsed* parse(char* path, int* count)
         return NULL;
     }
 
-
-    while (fgets(buffer, sizeof(buffer), ds_file)!=NULL)
+    do
     {
-        char* line = fgets(buffer, sizeof(buffer), ds_file);
-        sscanf(buffer, "%s %[^\n]", keyword, remline);
+        line = fgets(buffer, sizeof(buffer), ds_file);
+        printf("%s", line);
+        keyword = strtok(line, " ");
+        remline=keyword;
+        printf("keyword: %s\n", keyword);
+       
+        while(remline!=NULL)
+        {
+            remline = strtok(NULL, " ");
+            printf("remline: %s\n", remline);
+        }
+        struct parsed* current = malloc(sizeof(struct parsed));
+        current->instr=line;
+        if (strcmp(keyword, "FROM")==0)
+        {
+            current->instrtype=FROM;
+        }
+        else if (strcmp(keyword,"COPY"))
+        {
+            current->instrtype=COPY;
+        }
+        else if (strcmp(keyword, "RUN")==0)
+        {
+            current->instrtype=RUN;
+        }
+        else if (strcmp(keyword,"WORKDIR")==0)
+        {
+            current->instrtype=WORKDIR;
+        }
+        else if (strcmp(keyword, "ENV")==0)
+        {
+            current->instrtype=ENV;
+        }
+        else
+        {
+            printf("Invalid instruction in Docksmithfile. Please check.\n");
+        }
+        all[i]=current;
+        i++;
+        //sscanf(buffer, "%s %[^\n]", keyword, remline);
+        //printf("%s keyword\n", keyword);
+        //printf("%s remaining line\n", line);
         
-        printf("%s keyword\n", keyword);
-        printf("%s remaining line\n", line);
-
+        
     }
+    while (line!=NULL);
+
     //temp return
     struct parsed* i1 = malloc(sizeof(struct parsed));
     i1->instr=keyword;
-    strcpy(i1->instrtype, "COPY");
+    i1->instrtype=COPY;
     return i1;
 }
