@@ -30,7 +30,7 @@ struct parsed* parse(char* path, int* count)
         perror("fopen");
         return NULL;
     }
-
+    struct parsed* current = malloc(sizeof(struct parsed));
     do
     {
         line = fgets(buffer, sizeof(buffer), ds_file);
@@ -44,7 +44,7 @@ struct parsed* parse(char* path, int* count)
             remline = strtok(NULL, " ");
             printf("remline: %s\n", remline);
         }
-        struct parsed* current = malloc(sizeof(struct parsed));
+        
         current->instr=line;
         if (strcmp(keyword, "FROM")==0)
         {
@@ -81,8 +81,5 @@ struct parsed* parse(char* path, int* count)
     while (line!=NULL);
 
     //temp return
-    struct parsed* i1 = malloc(sizeof(struct parsed));
-    i1->instr=keyword;
-    i1->instrtype=COPY;
-    return i1;
+    return current;
 }
