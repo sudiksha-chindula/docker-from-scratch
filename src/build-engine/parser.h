@@ -11,12 +11,12 @@ enum type
     CMD
 };
 
-struct parsed_instr
+struct parsed
 {
-    char* instrarg;
+    char* instr;
     enum type instrtype;
 };
 
-struct parsed_instr* parse_instr(char*, int*);
+struct parsed* parse(char*, int*);
 
 #endif

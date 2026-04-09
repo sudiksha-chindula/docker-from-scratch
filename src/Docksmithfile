@@ -1,0 +1,3 @@
+FROM xyz x2y2x2
+COPY abc
+RUN abb
