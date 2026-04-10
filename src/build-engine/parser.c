@@ -6,8 +6,10 @@
 char* keyword;
 char buffer[100];
 char* line;
-char* remline;
+char* remline=NULL;
 char* remtok;
+size_t toklen;
+size_t linelen;
 struct parsed* all[50];
 
 
@@ -17,8 +19,10 @@ int main()
     char path[300]="/Users/sudiksha/sudiksha/acad/sem-6/cloud-computing/project/docker-from-scratch/src/Docksmithfile";
     struct parsed* result = parse(path, &count);
     printf("Result returned successfully.\n");
-    printf("Instr: %s", result->instr);
-    printf("Type: %d", result->instrtype);
+    printf("Instr: %s\n", result[0].instr_line);
+    printf("Instr keyword: %s\n", result[0].instr_keyword);
+    printf("Instr remline: %s\n", result[0].instr_remline);
+    printf("Type: %d", result[0].instrtype);
     return 0;
 }
 
@@ -39,40 +43,48 @@ struct parsed* parse(char* path, int* count)
 
     while (line!=NULL)
     {
-        main[i].instr=line;
+        //line extraction
+        main[i].instr_line=line;
         printf("Line number: %d\n", i);
+        printf("Line: %s", line);
+        linelen+=strlen(line);
 
         //keyword determination
         keyword = strtok(line, " ");
         printf("keyword: %s\n", keyword);
+        main[i].instr_keyword=keyword;
         
-        //remaining line determination
+        //remaining line (token) determination
         remtok=keyword;
         while((remtok=strtok(NULL, " "))!=NULL)    //loop check after strtok
         {
             printf("remtok: %s\n", remtok);
+            toklen+=strlen(remtok);
+            remline=realloc(remline, toklen);
+            remline = strcat(remline, remtok);
         }
-        
+        main[i].instr_remline=remline;
+
         //instruction type determination
         if (strcmp(keyword, "FROM")==0)
         {
-            main[i].instrtype=FROM;
+            main[i].instrtype=0;
         }
         else if (strcmp(keyword,"COPY")==0)
         {
-            main[i].instrtype=COPY;
+            main[i].instrtype=1;
         }
         else if (strcmp(keyword, "RUN")==0)
         {
-            main[i].instrtype=RUN;
+            main[i].instrtype=2;
         }
         else if (strcmp(keyword,"WORKDIR")==0)
         {
-            main[i].instrtype=WORKDIR;
+            main[i].instrtype=3;
         }
         else if (strcmp(keyword, "ENV")==0)
         {
-            main[i].instrtype=ENV;
+            main[i].instrtype=4;
         }
         else 
         {
@@ -82,7 +94,7 @@ struct parsed* parse(char* path, int* count)
     
         
         line=fgets(buffer, sizeof(buffer), ds_file);
-        
+        printf("\n");
     }
     return main;
 }
