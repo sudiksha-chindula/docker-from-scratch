@@ -91,8 +91,6 @@ struct parsed* parse(char* path, int* count)
             printf("Invalid instruction in Docksmithfile. Please check.\n");
         }
         i++;
-    
-        
         line=fgets(buffer, sizeof(buffer), ds_file);
         printf("\n");
     }
