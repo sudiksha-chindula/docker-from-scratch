@@ -13,7 +13,7 @@ char dir_name[2048];
 const char *outname = "dummy-dir.tar.gz";
 
 //refer libarchive documentation (rem to add to README)
-void write_archive(const char *outname, const char *path)
+void write_archive(const char *outname, const char *path, const char* name)
 {
     struct archive *a;
     struct archive_entry *entry;
@@ -44,7 +44,7 @@ void write_archive(const char *outname, const char *path)
     //creating archive entry
     entry = archive_entry_new();
 
-    archive_entry_set_pathname(entry, path);
+    archive_entry_set_pathname(entry, name);
     archive_entry_set_size(entry, st.st_size);
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
@@ -71,7 +71,7 @@ void write_archive(const char *outname, const char *path)
     fclose(fd);
     archive_entry_free(entry);
 
-    printf("Successfully wrote entry: %s\n", path);
+    printf("Successfully wrote entry: %s\n", name);
 
     archive_write_close(a);
     archive_write_free(a);
@@ -105,7 +105,7 @@ int main()
             strcpy(afilename, dir_name);
             strcat(afilename, filename);
 
-            write_archive(outname, afilename);
+            write_archive(outname, afilename, filename);
         }
     }
 
