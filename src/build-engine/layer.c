@@ -9,18 +9,18 @@
 char *filename; //appended to dir path
 char afilename[256];
 char dir_name[2048];
+struct archive *a;
+struct archive_entry *entry;
+struct stat st;
+char buff[8192];
+size_t len;
+FILE *fd;
 
 const char *outname = "dummy-dir.tar.gz";
 
 //refer libarchive documentation (rem to add to README)
-void write_archive(const char *outname, const char *path, const char* name)
+void write_archive(struct archive* a, const char *outname, const char *path, const char* name)
 {
-    struct archive *a;
-    struct archive_entry *entry;
-    struct stat st;
-    char buff[8192];
-    size_t len;
-    FILE *fd;
 
     //file stat data check
     if (stat(path, &st) != 0)
@@ -28,11 +28,6 @@ void write_archive(const char *outname, const char *path, const char* name)
         perror("stat");
         return;
     }
-
-    //creating archive objects
-    a = archive_write_new();
-    archive_write_add_filter_gzip(a);
-    archive_write_set_format_pax_restricted(a);
 
     if (archive_write_open_filename(a, outname) != ARCHIVE_OK)
     {
@@ -73,8 +68,6 @@ void write_archive(const char *outname, const char *path, const char* name)
 
     printf("Successfully wrote entry: %s\n", name);
 
-    archive_write_close(a);
-    archive_write_free(a);
 }
 
 int main()
@@ -105,7 +98,15 @@ int main()
             strcpy(afilename, dir_name);
             strcat(afilename, filename);
 
-            write_archive(outname, afilename, filename);
+            //creating archive objects
+            a = archive_write_new();
+            archive_write_add_filter_gzip(a);
+            archive_write_set_format_pax_restricted(a);
+
+            write_archive(a, outname, afilename, filename);
+
+            archive_write_close(a);
+            archive_write_free(a);
         }
     }
 
