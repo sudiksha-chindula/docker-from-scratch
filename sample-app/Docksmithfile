@@ -1,0 +1,6 @@
+FROM python:3.9-slim
+ENV GREETING=Hello
+WORKDIR /app
+COPY main.py /app/main.py
+RUN chmod +x /app/main.py
+CMD ["python", "main.py"]
