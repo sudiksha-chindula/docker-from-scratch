@@ -1,91 +1,48 @@
 #define _GNU_SOURCE
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sched.h>
+#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/mount.h>
-#include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include "isolation.h"
 
-// Stack size for the cloned child process
-#define STACK_SIZE (1024 * 1024)
+int execute_isolated(const char *new_root, char **argv, char **envp, const char *workdir) {
+    pid_t pid = fork();
+    if (pid < 0) return 1;
 
-struct container_config {
-    char *rootfs_path;
-    char **cmd;
-    char **env;
-    char *workdir;
-};
+    if (pid == 0) {
+        // 1. Child enters private namespaces
+        // We use CLONE_NEWNS to make mounts private to this child ONLY
+        if (unshare(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS) != 0) {
+            unshare(CLONE_NEWNS | CLONE_NEWUTS); // Fallback
+        }
 
-// This function runs inside the isolated child process
-static int child_exec(void *arg) {
-    struct container_config *config = (struct container_config *)arg;
+        // 2. CRITICAL: Prevent mount leakage to the host Ubuntu
+        mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL);
 
-    // 1. Filesystem Isolation (Hard Requirement) [cite: 115]
-    // We chroot into the assembled rootfs so the process cannot read/write outside [cite: 115]
-    if (chroot(config->rootfs_path) != 0) {
-        perror("chroot failed");
-        return 1;
-    }
-    
-    if (chdir(config->workdir != NULL ? config->workdir : "/") != 0) {
-        perror("chdir failed");
-        return 1;
-    }
+        // 3. Enter the jail
+        if (chroot(new_root) != 0) { perror("chroot"); exit(1); }
+        
+        // Ensure workdir exists and move into it
+        char mkdir_cmd[1024];
+        snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", workdir);
+        system(mkdir_cmd);
+        if (chdir(workdir) != 0) chdir("/");
 
-    // 2. Setup Environment Variables [cite: 119]
-    // Clears host environment and sets image/runtime ENV variables
-    clearenv();
-    for (int i = 0; config->env != NULL && config->env[i] != NULL; i++) {
-        putenv(config->env[i]);
-    }
+        // 4. Mount /proc (This is now invisible to the host!)
+        mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
 
-    // 3. Exec the command [cite: 114]
-    if (execvp(config->cmd[0], config->cmd) == -1) {
-        perror("execvp failed");
-        return 1;
+        // 5. Execute
+        if (envp && envp[0]) execvpe(argv[0], argv, envp);
+        else execvp(argv[0], argv);
+        
+        exit(1); 
     }
 
-    return 0;
-}
-
-// OS-level isolation primitive [cite: 127]
-int execute_isolated(const char *rootfs, char *const cmd[], char *const env[], const char *workdir) {
-    char *stack = malloc(STACK_SIZE);
-    if (!stack) {
-        perror("malloc failed for stack");
-        return -1;
-    }
-
-    struct container_config config = {
-        .rootfs_path = (char *)rootfs,
-        .cmd = (char **)cmd,
-        .env = (char **)env,
-        .workdir = (char *)workdir
-    };
-
-    // Use clone to create a new process with its own mount namespace (CLONE_NEWNS)
-    // and PID namespace (CLONE_NEWPID) for isolation.
-    pid_t pid = clone(child_exec, stack + STACK_SIZE, CLONE_NEWNS | CLONE_NEWPID | SIGCHLD, &config);
-    if (pid == -1) {
-        perror("clone failed");
-        free(stack);
-        return -1;
-    }
-
-    // The CLI blocks until the process exits [cite: 121]
     int status;
-    if (waitpid(pid, &status, 0) == -1) {
-        perror("waitpid failed");
-        free(stack);
-        return -1;
-    }
-
-    free(stack);
-    
-    if (WIFEXITED(status)) {
-        return WEXITSTATUS(status);
-    }
-    return -1;
+    waitpid(pid, &status, 0);
+    return WEXITSTATUS(status);
 }

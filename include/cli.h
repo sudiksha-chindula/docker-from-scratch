@@ -1,7 +1,9 @@
-#ifndef BUILD_H
-#define BUILD_H
+#ifndef CLI_H
+#define CLI_H
 
-// Parses Docksmithfile, manages cache, and executes build steps[cite: 8, 17, 88].
-int execute_build(const char *tag, const char *context_dir, int use_cache);
+int handle_build(int argc, char **argv);
+int handle_run(int argc, char **argv);
+int handle_images(int argc, char **argv);
+int handle_rmi(int argc, char **argv);
 
-#endif // BUILD_H
+#endif // CLI_H

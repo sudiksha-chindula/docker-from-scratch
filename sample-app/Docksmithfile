@@ -1,6 +1,9 @@
 FROM python:3.9-slim
 ENV GREETING=Hello
 WORKDIR /app
+# NEW: Install python3 because alpine.tar doesn't have it!
+RUN apk add --no-cache python3
 COPY main.py /app/main.py
 RUN chmod +x /app/main.py
-CMD ["python", "main.py"]
+# Use the shell form for simplicity
+CMD python3 main.py
