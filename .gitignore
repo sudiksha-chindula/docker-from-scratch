@@ -1,5 +1,13 @@
+# Build artifacts
+*.o
+*.d
+/docksmith
+
+# Editor junk
 *.vscode
 *.DS_Store
 *.py.swp
-*.o
 
+# Local test state
+/test-state/
+/tmp-docksmith/
