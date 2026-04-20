@@ -1,9 +1,10 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -g
+CFLAGS = -Wall -Wextra -Wpedantic -Iinclude -g -MMD -MP
 LDFLAGS = -lcrypto -larchive -lcjson
 
-SRCS = src/main.c src/cli.c src/isolation.c src/build.c src/state.c src/tar_utils.c
+SRCS = $(wildcard src/*.c)
 OBJS = $(SRCS:.c=.o)
+DEPS = $(OBJS:.o=.d)
 TARGET = docksmith
 
 all: $(TARGET)
@@ -14,5 +15,9 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+-include $(DEPS)
+
 clean:
-	rm -f src/*.o $(TARGET)
+	rm -f src/*.o src/*.d $(TARGET)
+
+.PHONY: all clean

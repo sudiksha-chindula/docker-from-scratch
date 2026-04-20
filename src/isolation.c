@@ -5,44 +5,49 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
 #include "isolation.h"
+#include "fsutil.h"
 
 int execute_isolated(const char *new_root, char **argv, char **envp, const char *workdir) {
     pid_t pid = fork();
-    if (pid < 0) return 1;
+    if (pid < 0) { perror("fork"); return -1; }
 
     if (pid == 0) {
-        // 1. Child enters private namespaces
-        // We use CLONE_NEWNS to make mounts private to this child ONLY
+        /* Abort on failure — no silent fallback that weakens isolation */
         if (unshare(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS) != 0) {
-            unshare(CLONE_NEWNS | CLONE_NEWUTS); // Fallback
+            perror("unshare (needs root or user namespaces)");
+            _exit(127);
+        }
+        if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0) {
+            perror("mount private");
+            _exit(127);
+        }
+        if (chroot(new_root) != 0) { perror("chroot"); _exit(127); }
+        if (chdir("/") != 0)       { perror("chdir /"); _exit(127); }
+
+        /* mkdir_p syscalls only — no system() */
+        if (workdir && workdir[0]) {
+            mkdir_p(workdir, 0755);
+            if (chdir(workdir) != 0) chdir("/");
         }
 
-        // 2. CRITICAL: Prevent mount leakage to the host Ubuntu
-        mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL);
-
-        // 3. Enter the jail
-        if (chroot(new_root) != 0) { perror("chroot"); exit(1); }
-        
-        // Ensure workdir exists and move into it
-        char mkdir_cmd[1024];
-        snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", workdir);
-        system(mkdir_cmd);
-        if (chdir(workdir) != 0) chdir("/");
-
-        // 4. Mount /proc (This is now invisible to the host!)
         mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
 
-        // 5. Execute
-        if (envp && envp[0]) execvpe(argv[0], argv, envp);
-        else execvp(argv[0], argv);
-        
-        exit(1); 
+        extern char **environ;
+        char **env = (envp && envp[0]) ? envp : environ;
+        if (argv[0][0] == '/') execve(argv[0], argv, env);
+        else                   execvpe(argv[0], argv, env);
+
+        perror("exec");
+        _exit(127);
     }
 
     int status;
-    waitpid(pid, &status, 0);
-    return WEXITSTATUS(status);
+    if (waitpid(pid, &status, 0) < 0) { perror("waitpid"); return -1; }
+    if (WIFEXITED(status))   return WEXITSTATUS(status);
+    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+    return -1;
 }
