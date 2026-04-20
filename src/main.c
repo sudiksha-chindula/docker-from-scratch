@@ -20,6 +20,8 @@ int main(int argc, char **argv) {
         return handle_images(argc, argv);
     } else if (strcmp(argv[1], "rmi") == 0) {
         return handle_rmi(argc, argv);
+    } else if (strcmp(argv[1], "import") == 0) {
+        return handle_import(argc, argv);
     } else {
         fprintf(stderr, "Unknown command: %s\n", argv[1]);
         return 1;
